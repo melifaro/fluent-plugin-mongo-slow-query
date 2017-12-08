@@ -11,7 +11,7 @@ module Fluent
         # If the configuration is invalid, raise Fluent::ConfigError.
         def configure(conf)
             # load log format for MongoDB
-            conf["format"] = '/^(?<time>.*?)(?:\s+\w\s\w+\s*)? \[conn\d+\] (?<op>\w+) (?<ns>\S+) (?<detail>query: (?<query>\{(?:\g<query>|[^\{\}])*\})(?: update: (?<update>\{(?:\g<update>|[^\{\}])*\}))?|command:.*?(?<command>\{(?:\g<command>|[^\{\}])*\})|.*?) (?<stat>.*?)(?: locks:\{.*\})? (?<ms>\d+)ms$/'
+            conf["format"] = '/^(?<time>.*?)(?:\s+\w\s\w+\s*)? \[conn\d+\] (?<op>\w+) (?<ns>\S+) (?<detail>query: (?<query>\{(?:\g<query>|[^\{\}])*\})(?: update: (?<update>\{(?:\g<update>|[^\{\}])*\}))?|command:(?<command_op>.*?)(?<command>\{(?:\g<command>|[^\{\}])*\})|.*?) (?<stat>.*?)(?: locks:\{.*\})? (?<ms>\d+)ms$/'
 
             # not set "time_format"
             # default use Ruby's DateTime.parse() to pase time
@@ -44,6 +44,11 @@ module Fluent
                         end
                         record["ms"] = record["ms"].to_i
                         record["ts"] = time
+
+                        record["command_op"] = record["command_op"].gsub(/\s+/, "")
+                        if ! record["command_op"].empty?
+                          record["op"] = record["command_op"]
+                        end
 
                         case record["op"]
                         when "query"
